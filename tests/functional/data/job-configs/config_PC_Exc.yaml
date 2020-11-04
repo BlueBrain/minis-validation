@@ -1,0 +1,19 @@
+reference: "Cossart et al. 2000, Neuroscience"
+
+results:
+  frequency:
+    mean: 0.02
+    std: 0.01
+  n: 8
+
+cells: {"mtype":"SP_PC"}
+
+protocol:
+  t_stop: 10000.0
+  record_dt: 0.1
+  hold_V: -76.6
+  enable_ttx: true
+  calcium: 2.0
+
+analysis:
+  peak_min_height: 1.0

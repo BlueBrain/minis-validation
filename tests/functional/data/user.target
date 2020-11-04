@@ -1,0 +1,29 @@
+Target Cell PV
+{
+    SP_PVBC SP_BS SP_AA
+}
+
+Target Cell CCK
+{
+    SLM_PPA SR_SCA SP_CCKBC
+}
+
+Target Cell nonCCK
+{
+    SP_PVBC SP_BS SP_AA SP_Ivy SO_BS SO_BP SO_OLM SO_Tri
+}
+
+Target Cell SP_INT
+{
+    SP_AA SP_BS SP_PVBC SP_CCKBC SP_Ivy
+}
+
+Target Cell SP_BC
+{
+    SP_PVBC SP_CCKBC
+}
+
+Target Cell S_BS
+{
+    SO_BS SP_BS
+}

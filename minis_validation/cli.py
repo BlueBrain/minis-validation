@@ -47,6 +47,7 @@ def simulate(blue_config: str,
              forward_skip: float = None):
     # pylint: disable=too-many-arguments
     """CLI for ``simulation.run`` function."""
+    assert not Path(output).exists(), f'Can\'t output to existing folder: {output}'
     simulation.run(Path(blue_config),
                    Path(frequencies),
                    Path(jobs_configs_dir),

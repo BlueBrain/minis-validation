@@ -165,6 +165,8 @@ def _run_simulation(gid_frequency: Tuple,
     events = np.array(sorted(((t, syn_id[1])
                               for syn_id, nc_vectors in mini_nc_vectors.items()
                               for t in nc_vectors)))
+    if events.size == 0:
+        events = np.empty((0, 2))
     L.info('Saving results for a gid %i, minis type %s and frequency %.3f',
            gid, minis_type, frequency)
     trace = np.vstack((cell_time, cell_voltage, cell_current)).T
@@ -207,16 +209,14 @@ def run(blue_config_file: Path,
         duration: Override duration of simulations
         forward_skip: Override ForwardSkip value of simulations
     """
+    if seed is None:
+        seed = 0
+    np.random.seed(seed)
+
     # dask.distributed logging requires a manual override
     logging.getLogger('distributed').setLevel(L.getEffectiveLevel())
     initialize()
     client = Client()
-
-    assert not output.exists(), f'Can\'t output to existing folder: {output}'
-    output.mkdir(parents=True, exist_ok=True)
-    if seed is None:
-        seed = 0
-    np.random.seed(seed)
 
     frequencies = pd.read_csv(frequencies_file, sep='\t')['MINIS_FREQ'].tolist()
     config_files = list(jobs_configs_dir.glob('config_*.yaml'))
@@ -235,12 +235,12 @@ def run(blue_config_file: Path,
             config['cells']['$target'] = target
 
         config_gids = _get_gids(config['cells'], blue_config_file, num_cells, target_file, gids)
-        output_dir = _get_config_output(output, config_file)
-        output_dir.mkdir(exist_ok=True, parents=True)
+        config_output = _get_config_output(output, config_file)
+        config_output.mkdir(exist_ok=True, parents=True)
 
         b = bag.concat([b, bag.from_sequence(itertools.product(config_gids, frequencies))
                        .map(_run_simulation_fork,
-                            output_dir=output_dir,
+                            output_dir=config_output,
                             blue_config_file=blue_config_file,
                             minis_type=_get_config_minis_type(config_file),
                             seed=seed,
@@ -251,9 +251,9 @@ def run(blue_config_file: Path,
 
     b = bag.from_sequence([])
     for config_file in config_files:
-        output_dir = _get_config_output(output, config_file)
+        config_output = _get_config_output(output, config_file)
         b = bag.concat([b, bag.from_sequence(frequencies).map(_write_traces,
-                                                              output_dir=output_dir)])
+                                                              output_dir=config_output)])
     b.compute()
     L.info('Minis-validation is finished. HDF5 reports have been saved.')
     time.sleep(10)

@@ -39,7 +39,7 @@ setup(
         'dask[distributed,bag]>=2.0',
         'dask_mpi>=2.0',
         'neuron>=7.8',
-        'bluepy>=0.14',
+        'bluepy[bbp,sonata]>=0.14',
         'bluepy-configfile>=0.1.10',
         'bglibpy>=4.3',
     ],

@@ -1,6 +1,10 @@
 Changelog
 =========
 
+Version 0.0.3
+-------------
+- Fix bluepy dependency with respect to functional tests
+
 Version 0.0.2
 -------------
 - Fix setup dependencies with respect to spack

@@ -21,6 +21,7 @@ When available as a module.
 
 Usage
 -----
+Currently the project can be used only on BB5!
 
 Cli
 ^^^
@@ -76,9 +77,26 @@ arguments of analysis commands see their help:
 BB5
 ^^^
 For now the project can only be used on BB5 as it requires a lot of computational resources, and
-uses a special cluster software library Dask for running simulations. An example of sbatch script
-for `simulate` command:
+uses a special cluster software library Dask for running simulations.
+An example of srun for `simulate` command:
 
+.. code:: bash
+
+    module load unstable
+    module load neurodamus-hippocampus # This `neurodamus` is an example. Choose appropriate `neurodamus` for your circuit.
+    module load py-minis-validation
+    # unset PMI_RANK  # you might need this command to disable Neuron mechanisms try to load MPI
+
+    srun -Aproj30 -N8 -t=24:00:00 --tasks-per-node=36 --exclusive minis-validation -vv simulate \
+    /path/to/BlueConfig \
+    /path/to/frequencies.csv \
+    /path/to/job-configs/ \
+    /path/to/output/ \
+    -n 1000 \
+    -T /path/to/user.target
+
+
+An example of sbatch script for `simulate` command:
 .. code:: bash
 
     #!/bin/bash
@@ -86,7 +104,7 @@ for `simulate` command:
     #SBATCH --account=<your_project>
     #SBATCH --nodes=16
     #SBATCH --time=24:00:00
-    #SBATCH --tasks-per-node=72
+    #SBATCH --tasks-per-node=36
     #SBATCH -C nvme|cpu
     #SBATCH --mem=0
     #SBATCH --partition=prod
@@ -94,10 +112,9 @@ for `simulate` command:
     #SBATCH --output=minis-validation-simulate_out_%j
     #SBATCH --error=minis-validation-simulate_err_%j
 
-    source /path/to/minis-validation/venv/bin/activate # don't forget to install the project in a virtual environment.
     module purge
     module load archive/2020-09 neurodamus-neocortex/0.3 # This `neurodamus` is an example. Choose appropriate `neurodamus` for your circuit.
-    module load py-h5py/2.10.0 py-dask-mpi/2.0.0 # necessary module libraries
+    module load py-minis-validation
     unset PMI_RANK  # by default Neuron mechanism try to load MPI, we have to disable it
     export DASK_DISTRIBUTED__WORKER__USE_FILE_LOCKING=False
     export DASK_DISTRIBUTED__WORKER__MEMORY__TARGET=False  # don't spill to disk

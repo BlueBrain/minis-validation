@@ -135,7 +135,7 @@ def _run_simulation(gid_frequency: Tuple,
                         f'Weight 1.0\n')
     ssim.connection_entries = ssim.bc.typed_sections('Connection')
 
-    ssim.instantiate_gids([gid], add_synapses=True, add_minis=True)
+    ssim.instantiate_gids([gid], add_synapses=True, add_minis=True, add_projections=True)
     cell = ssim.cells[gid]
     if enable_ttx:
         cell.enable_ttx()

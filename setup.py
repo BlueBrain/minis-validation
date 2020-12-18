@@ -33,7 +33,7 @@ setup(
         'numpy>=1.14',
         'pandas>=0.25',
         'matplotlib>=3.1.1',
-        'h5py>=3',
+        'h5py>=2.10',
         'click>=6.7',
         'pyyaml>=5.1',
         'dask[distributed,bag]>=2.0',

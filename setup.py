@@ -38,6 +38,7 @@ setup(
         'pyyaml>=5.1',
         'dask[distributed,bag]>=2.0',
         'dask_mpi>=2.0',
+        'neuron>=7.8',
         'neurom<1.6',  # to resolve h5py dependency conflict
         'bluepy>0.14,<1.0',
         'bluepy-configfile>=0.1.10',

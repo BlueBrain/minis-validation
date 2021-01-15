@@ -87,7 +87,7 @@ An example of srun for `simulate` command:
     module load py-minis-validation
     # unset PMI_RANK  # you might need this command to disable Neuron mechanisms try to load MPI
 
-    srun -Aproj30 -N8 -t=24:00:00 --tasks-per-node=36 --exclusive minis-validation -vv simulate \
+    srun -Aproj30 -N8 -t=24:00:00 --cpus-per-task=2 --exclusive minis-validation -vv simulate \
     /path/to/BlueConfig \
     /path/to/frequencies.csv \
     /path/to/job-configs/ \
@@ -104,8 +104,8 @@ An example of sbatch script for `simulate` command:
     #SBATCH --account=<your_project>
     #SBATCH --nodes=16
     #SBATCH --time=24:00:00
-    #SBATCH --tasks-per-node=36
-    #SBATCH -C nvme|cpu
+    #SBATCH --cpus-per-task=2
+    #SBATCH -C cpu
     #SBATCH --mem=0
     #SBATCH --partition=prod
     #SBATCH --exclusive

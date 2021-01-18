@@ -1,6 +1,10 @@
 Changelog
 =========
 
+Version 0.0.4
+-------------
+- Update bluepy dependency to version 2.0, h5py to 3.0
+
 Version 0.0.3
 -------------
 - Fix bluepy dependency with respect to functional tests

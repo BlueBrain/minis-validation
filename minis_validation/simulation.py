@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import h5py
 import yaml
-from bluepy.v2 import Circuit
+from bluepy import Circuit
 from bluepy_configfile.configfile import BlueConfig
 
 L = logging.getLogger(__name__)

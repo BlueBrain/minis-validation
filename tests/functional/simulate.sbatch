@@ -3,10 +3,10 @@
 #SBATCH --account=proj44
 #SBATCH --nodes=8
 #SBATCH --time=01:00:00
-#SBATCH -C nvme|cpu
+#SBATCH -C cpu
 #SBATCH --partition=prod
 #SBATCH --exclusive
-#SBATCH --tasks-per-node=36
+#SBATCH --cpus-per-task=2
 #SBATCH --mem=0
 #SBATCH --output=minis-validation-simulate-hippocampus-test-out-%j
 #SBATCH --error=minis-validation-simulate-hippocampus-test-err-%j

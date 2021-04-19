@@ -3,7 +3,7 @@
 #SBATCH --account=proj44
 #SBATCH --nodes=1
 #SBATCH --time=01:00:00
-#SBATCH -C nvme|cpu
+#SBATCH -C cpu
 #SBATCH --partition=prod
 #SBATCH --tasks-per-node=1
 #SBATCH --mem=0

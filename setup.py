@@ -39,7 +39,6 @@ setup(
         'dask[distributed,bag]>=2.0,<3',
         'dask_mpi>=2.0,<3',
         'neuron>=7.8',
-        'neurom>=1.6,<2',
         'bluepy>=2,<3',
         'bluepy-configfile>=0.1.10,<1',
         'bglibpy>=4.4,<5',

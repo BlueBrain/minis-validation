@@ -3,6 +3,7 @@ Changelog
 
 Version 0.0.4
 -------------
+- Remove neurom as dependency
 - Update bluepy dependency to version 2.0, h5py to 3.0
 
 Version 0.0.3

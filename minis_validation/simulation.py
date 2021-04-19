@@ -238,7 +238,8 @@ def run(blue_config_file: Path,
         config_output = _get_config_output(output, config_file)
         config_output.mkdir(exist_ok=True, parents=True)
 
-        b = bag.concat([b, bag.from_sequence(itertools.product(config_gids, frequencies))
+        b = bag.concat([b, bag.from_sequence(itertools.product(config_gids, frequencies),
+                                             partition_size=1)
                        .map(_run_simulation_fork,
                             output_dir=config_output,
                             blue_config_file=blue_config_file,

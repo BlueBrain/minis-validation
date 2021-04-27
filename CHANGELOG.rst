@@ -1,6 +1,10 @@
 Changelog
 =========
 
+Version 0.0.5
+-------------
+- Tighter dependencies restrictions on Dask dependencies
+
 Version 0.0.4
 -------------
 - [NSETM-1412] Use partition size of 1 to boost parallel running of simulations with Dask

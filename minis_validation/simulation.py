@@ -33,7 +33,7 @@ def _get_gids(cells: Dict,
               blue_config_file: Path,
               num_cells: int,
               target_file: Path = None,
-              gids: List[int] = None) -> List[int]:
+              gids: List[int] = None):
     """Selects GIDs to simulate.
 
     Args:
@@ -44,7 +44,7 @@ def _get_gids(cells: Dict,
         gids: List of GIDs that override simulations cells
 
     Returns:
-        List: selected GIDs
+        List[int]: selected GIDs
     """
     if gids is None:
         with blue_config_file.open() as f:

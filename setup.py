@@ -36,6 +36,7 @@ setup(
         'h5py>=3,<4',
         'click>=7,<8',
         'pyyaml>=5.1,<6',
+        'types-PyYAML>=5.1,<6',
         'dask[distributed,bag]>=2.0,<=2.30.0',
         'dask_mpi>=2.0,<=2.21',
         'distributed>=2.0,<=2.30.1',

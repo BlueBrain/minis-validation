@@ -97,6 +97,7 @@ An example of srun for `simulate` command:
 
 
 An example of sbatch script for `simulate` command:
+
 .. code:: bash
 
     #!/bin/bash
@@ -126,7 +127,6 @@ An example of sbatch script for `simulate` command:
     # Reduce dask profile memory usage/leak (see https://github.com/dask/distributed/issues/4091)
     export DASK_DISTRIBUTED__WORKER__PROFILE__INTERVAL=10000ms  # Time between statistical profiling queries
     export DASK_DISTRIBUTED__WORKER__PROFILE__CYCLE=1000000ms  # Time between starting new profile
-
 
     srun minis-validation -vv simulate \
     /path/to/BlueConfig \

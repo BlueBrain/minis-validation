@@ -183,6 +183,7 @@ def run(blue_config_file: Path,
         frequencies_file: Path,
         jobs_configs_dir: Path,
         output: Path,
+        mpi: bool = True,
         num_cells: int = 1000,
         target_file: Path = None,
         target: str = None,
@@ -201,6 +202,7 @@ def run(blue_config_file: Path,
             Read more details about it in Documentation of this project. The compiled Documentation
             is at https://bbpteam.epfl.ch/documentation/m.html#minis-validation.
         output: Path to a folder where to store results of simulations
+        mpi: use MPI or threads to run parallel simulations
         num_cells: Number of cells to simulate
         target_file: Path to a target file to override 'TargetFile' of ``blue_config_file``
         target: Override '$target' of simulations
@@ -215,8 +217,11 @@ def run(blue_config_file: Path,
 
     # dask.distributed logging requires a manual override
     logging.getLogger('distributed').setLevel(L.getEffectiveLevel())
-    initialize()
-    client = Client()
+    if mpi:
+        initialize()
+        client = Client()
+    else:
+        client = Client(processes=False)
 
     frequencies = pd.read_csv(frequencies_file, sep='\t')['MINIS_FREQ'].tolist()
     config_files = list(jobs_configs_dir.glob('config_*.yaml'))

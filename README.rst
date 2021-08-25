@@ -50,9 +50,10 @@ For all options and arguments of `simulate` command see its help:
 
     minis-validation simulate --help
 
-``/path/to/job-configs/`` must contain job config files. Each file is a yaml file of the following
-format :ref:`ref-job-config`.
-``/path/to/frequencies.csv`` a file that contains frequencies to simulate :ref:`ref-frequencies`.
+``/path/to/job-configs/`` must contain job config files. Each file is a yaml file of the `following
+format <job_config.html>`_.
+``/path/to/frequencies.csv`` is a file that contains frequencies to simulate. `An example
+<frequencies.html>`_.
 
 To run analysis of all simulations, e.g. of all jobs configs:
 
@@ -73,6 +74,19 @@ arguments of analysis commands see their help:
 
     minis-validation analyze-job --help
     minis-validation analyze-jobs --help
+
+Testing
+^^^^^^^
+It is highly suggested to use BB5 for running tests manually. Make sure to load a hippocampus
+circuit module before running tests because tests use a hippocampus circuit.
+
+.. code:: bash
+
+    module load unstable neurodamus-hippocampus
+    # assume that you are in the project's root
+    pytest tests
+    # or
+    tox -e py38
 
 BB5
 ^^^

@@ -1,5 +1,3 @@
-.. _ref-job-config:
-
 Job Config format
 =================
 Besides the file format, the filename of such file must follow the next pattern:

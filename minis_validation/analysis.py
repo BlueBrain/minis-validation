@@ -209,7 +209,7 @@ def analyze_jobs(jobs_configs_dir: Path, jobs_traces_dir: Path):
     Args:
         jobs_configs_dir: Path to a folder with YAML files describing experiment conditions.
         jobs_traces_dir: Path to a folder where stored results of all jobs simulations. This
-            is ``output`` argument in ``simulation.run``.
+            is ``output`` argument of ``simulation.run``.
 
     Returns:
         A dataframe of results

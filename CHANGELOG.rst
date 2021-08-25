@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Version 0.0.6
+-------------
+- Add new option ``mpi`` for ``minis_validation.simulation.run``. It allows to choose whether
+  to run parallel simulations with mpi or not.
+
 Version 0.0.5
 -------------
 - Tighter dependencies restrictions on Dask dependencies

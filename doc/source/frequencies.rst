@@ -1,8 +1,6 @@
-.. _ref-frequencies:
-
 Frequencies format
 ==================
-Description a frequencies file. An example of such file:
+Description of a frequencies file. An example:
 
   ::
 

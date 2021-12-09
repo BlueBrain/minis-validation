@@ -37,9 +37,9 @@ setup(
         'click>=7,<8',
         'pyyaml>=5.1,<6',
         'types-PyYAML>=5.1,<6',
-        'dask[distributed,bag]>=2.0,<=2.30.0',
-        'dask_mpi>=2.0,<=2.21',
-        'distributed>=2.0,<=2.30.1',
+        # 2021.8.1 excluded due to https://github.com/dask/distributed/issues/5292
+        'dask[distributed,bag]>=2.0,!=2021.8.1',
+        'dask_mpi>=2.0',
         'neuron>=7.8',
         'bluepy>=2,<3',
         'bluepy-configfile>=0.1.10,<1',

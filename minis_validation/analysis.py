@@ -62,8 +62,8 @@ def _load_traces(trace_file: Path, t_start: int = 0):
                 t_idx = np.where(t_start < trace[:, TIME])[0]
                 e_idx = np.where(t_start < events[:, TIME])[0]
             else:
-                t_idx = slice(None)  # use all
-                e_idx = slice(None)  # use all
+                t_idx = slice(None)  # type: ignore  # use all
+                e_idx = slice(None)  # type: ignore  # use all
             traces_per_gid[gid] = {'trace': trace[t_idx, :], 'events': events[e_idx, :]}
     return traces_per_gid
 

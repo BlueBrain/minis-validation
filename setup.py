@@ -1,18 +1,19 @@
 #!/usr/bin/env python
-
-import imp
-import sys
+import importlib.util
 
 from setuptools import setup, find_packages
 
-if sys.version_info < (3, 6):
-    sys.exit("Sorry, Python < 3.6 is not supported")
+spec = importlib.util.spec_from_file_location(
+    "minis_validation.version",
+    "minis_validation/version.py",
+)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+VERSION = module.__version__
 
 # read the contents of the README file
-with open("README.rst", encoding="utf-8") as f:
+with open("README.rst", "r", encoding="utf-8") as f:
     README = f.read()
-
-VERSION = imp.load_source("", "minis_validation/version.py").__version__
 
 setup(
     name="minis-validation",
@@ -54,8 +55,9 @@ setup(
         "Intended Audience :: Science/Research",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
     ],
 )

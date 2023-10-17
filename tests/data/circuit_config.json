@@ -1,0 +1,24 @@
+{
+  "manifest": {
+    "$BASE_DIR": "."
+  },
+  "networks": {
+    "nodes": [
+      {
+        "nodes_file": "$BASE_DIR/nodes.h5",
+        "populations": {
+          "root__neurons": {
+            "type": "biophysical",
+            "biophysical_neuron_models_dir": "$BASE_DIR/hoc_files",
+            "morphologies_dir": "$BASE_DIR/morphologies"
+          }
+        }
+      }
+    ],
+    "edges": [
+    ]
+  },
+  "metadata": {
+    "status": "partial"
+  }
+}

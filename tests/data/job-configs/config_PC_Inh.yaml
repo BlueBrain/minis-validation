@@ -9,14 +9,13 @@ results:
     std: 0.15
   n: 10
 
-cells: {"mtype":"SP_PC"}
+cells: {"mtype": "L6_BP"}
 
 protocol:
   t_stop: 10000.0
   record_dt: 0.1
   hold_V: -6.6
   enable_ttx: true
-  calcium: 2.0
 
 analysis:
   peak_min_height: 2.5

@@ -1,12 +1,13 @@
 """Plot functions for ``analysis`` package."""
 from pathlib import Path
 from typing import Dict
+
 import matplotlib
-import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 import numpy as np
 
-from minis_validation.util import TIME, CURRENT
+from minis_validation.util import CURRENT, TIME
 
 matplotlib.use('Agg')
 
@@ -22,6 +23,7 @@ def scaled_log1p_inv(x, a, b):
 
 
 def plot_traces_events(plot_dir: Path,
+                       population_name: str,
                        traces_per_gid: Dict,
                        mark_NetCon_events: bool,
                        mark_peaks: bool):
@@ -31,6 +33,7 @@ def plot_traces_events(plot_dir: Path,
 
     Args:
         plot_dir: folder where save plots
+        population_name: name of the population
         traces_per_gid: traces data
         mark_NetCon_events: whether to plot NetCon events
         mark_peaks: whether to plot peaks
@@ -53,7 +56,7 @@ def plot_traces_events(plot_dir: Path,
         ax.set_ylabel('I_m (nA)')
         ax.set_xlabel('Time (ms)')
         ax.set_xlim(t[0], t[-1])
-        fig.savefig(plot_dir / f'a{gid}.png', bbox_inches='tight', dpi=100)
+        fig.savefig(plot_dir / f'{population_name}_{gid}.png', bbox_inches='tight', dpi=100)
         plt.close(fig)
 
 

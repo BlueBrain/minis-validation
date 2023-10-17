@@ -1,0 +1,54 @@
+
+      {
+        "version": 1,
+        "manifest": {
+          "$OUTPUT_DIR": "./reporting",
+          "$BASE_DIR": "."
+        },
+        "network": "$BASE_DIR/circuit_config.json",
+        "node_sets_file": "$BASE_DIR/node_sets.json",
+        "node_set": "Mosaic",
+        "target_simulator": "CORENEURON",
+        "run": {
+          "dt": 0.025,
+          "forward_skip": 5000,
+          "random_seed": 0,
+          "tstop": 100
+        },
+        "output": {
+          "output_dir": "$OUTPUT_DIR",
+          "spikes_file": "out.h5",
+          "spikes_sort_order": "by_time"
+        },
+        "reports": {
+          "soma": {
+            "cells": "Mosaic",
+            "variable_name": "v",
+            "sections": "soma",
+            "type": "compartment",
+            "dt": 0.1,
+            "compartments": "center",
+            "start_time": 0,
+            "end_time": 100
+          }
+        },
+        "inputs": {
+          "holding_current": {
+            "module": "linear",
+            "input_type": "current_clamp",
+            "node_set": "Mosaic",
+            "amp_start": -0.03515624999999999,
+            "delay": 0.0,
+            "duration": 500.0
+          },
+          "threshold_current": {
+            "module": "linear",
+            "input_type": "current_clamp",
+            "node_set": "Mosaic",
+            "amp_start": 0.35312774458632922,
+            "delay": 10.0,
+            "duration": 500.0
+          }
+        }
+      }
+    

@@ -7,42 +7,63 @@ Validation of spontaneous minis.
 Installation
 ------------
 
-Until the project is available via modules on BB5, the only way is to install via pip.
+The project is available as a module.
 
 .. code:: bash
 
-    pip install --index-url https://bbpteam.epfl.ch/repository/devpi/bbprelman/dev/+simple/ minis-validation
-
-When available as a module.
-
-.. code:: bash
-
-    module load unstable minis-validation
+    module load unstable neurodamus-hippocampus py-minis-validation
 
 Usage
 -----
-Currently the project can be used only on BB5!
+It is recommended to run the project only on BB5.
 
 Cli
 ^^^
 The recommended usage is via the command line interface API. To run simulations of minis with
-different sets of parameters:
+the test data:
 
 .. code:: bash
 
-    minis-validation -vv simulate \
-      /path/to/BlueConfig \
-      /path/to/frequencies.csv \
-      /path/to/job-configs/ \
-      /path/to/output/ \
-      -n 1000 \
-      -T /path/to/user.target
+    minis-validation -vv simulate 
+        tests/data/simulation_config.json 
+        tests/data/frequencies.csv 
+        tests/data/job-configs/ 
+        out 
+        -n 1000 
+        --log_dir log_dir 
+        --timeout-s 28800
+        --slurm account proj30 
+        --slurm partition prod 
+        --slurm array-parallelism 200 
 
 `-vv` options stands for verbosity of log output. There are 3 different values for it: `-v`, `-vv`,
 `-vvv`. `-v` is for showing only warnings and errors. `-vv` additionally to `-v` shows info
 messages. `-vvv` additionally shows debug messages. By default `-v` is used. This flag is common to
 all NSE projects, and is usually used right after the main command and before the supplementary
 command. The main command is `minis-validation`, the supplementary command is `simulate`.
+
+SLURM configuration
+"""""""""""""""""""
+Many SLURM config values may be passed in the command line using the ``--slurm`` option.
+See the full list in `submitit <https://github.com/facebookincubator/submitit>`__, specifically the arguments of ``SlurmExecutor._make_sbatch_string()``.
+
+Note: the slurm keys must be provided without ``slurm`` prefix, and they should be separated by dashes instead of underscores.
+
+Note: the value of `--timeout-s` is converted to the right format and passed to SLURM as ``time``, so you should not specify ``--slurm time``.
+
+Mandatory arguments:
+``--slurm account``, ``--slurm partition``
+
+Recommended arguments:
+ * `--slurm array-parallelism` - number of tasks to run concurently
+ * `--slurm cpus-per-task` - number of CPUs per task
+ * `--slurm mem` - amount of memory over all
+ * `--slurm mem-per-cpu` - amount of memory per cpu
+
+Note: `--slurm mem` and `--slurm mem-per-cpu` are mutually exclusive
+
+So far we have no guidelines for the values. They have to be tuned for each circuit. 
+Feel free to submit a MR with your findings.
 
 For all options and arguments of `simulate` command see its help:
 
@@ -77,80 +98,8 @@ arguments of analysis commands see their help:
 
 Testing
 ^^^^^^^
-It is highly suggested to use BB5 for running tests manually. Make sure to load a hippocampus
-circuit module before running tests because tests use a hippocampus circuit.
+It is highly suggested to use BB5 for running tests manually. 
 
 .. code:: bash
 
-    module load unstable neurodamus-hippocampus
-    # assume that you are in the project's root
-    pytest tests
-    # or
-    tox -e py38
-
-BB5
-^^^
-For now the project can only be used on BB5 as it requires a lot of computational resources, and
-uses a special cluster software library Dask for running simulations.
-An example of srun for `simulate` command:
-
-.. code:: bash
-
-    module load unstable
-    module load neurodamus-hippocampus # This `neurodamus` is an example. Choose appropriate `neurodamus` for your circuit.
-    module load py-minis-validation
-    # unset PMI_RANK  # you might need this command to disable Neuron mechanisms try to load MPI
-
-    srun -Aproj30 -N8 -t=24:00:00 --cpus-per-task=2 --exclusive minis-validation -vv simulate \
-    /path/to/BlueConfig \
-    /path/to/frequencies.csv \
-    /path/to/job-configs/ \
-    /path/to/output/ \
-    -n 1000 \
-    -T /path/to/user.target
-
-
-An example of sbatch script for `simulate` command:
-
-.. code:: bash
-
-    #!/bin/bash
-    #SBATCH --job-name=minis-validation-simulate
-    #SBATCH --account=<your_project>
-    #SBATCH --nodes=16
-    #SBATCH --time=24:00:00
-    #SBATCH --cpus-per-task=2
-    #SBATCH -C cpu
-    #SBATCH --mem=0
-    #SBATCH --partition=prod
-    #SBATCH --exclusive
-    #SBATCH --output=minis-validation-simulate_out_%j
-    #SBATCH --error=minis-validation-simulate_err_%j
-
-    module purge
-    module load archive/2020-09 neurodamus-neocortex/0.3 # This `neurodamus` is an example. Choose appropriate `neurodamus` for your circuit.
-    module load py-minis-validation
-    unset PMI_RANK  # by default Neuron mechanism try to load MPI, we have to disable it
-    export DASK_DISTRIBUTED__WORKER__USE_FILE_LOCKING=False
-    export DASK_DISTRIBUTED__WORKER__MEMORY__TARGET=False  # don't spill to disk
-    export DASK_DISTRIBUTED__WORKER__MEMORY__SPILL=False  # don't spill to disk
-    export DASK_DISTRIBUTED__WORKER__MEMORY__PAUSE=0.80  # pause execution at 80% memory use
-    export DASK_DISTRIBUTED__WORKER__MEMORY__TERMINATE=0.95  # restart the worker at 95% use
-    export DASK_DISTRIBUTED__WORKER__MULTIPROCESSING_METHOD=spawn
-    export DASK_DISTRIBUTED__WORKER__DAEMON=True
-    # Reduce dask profile memory usage/leak (see https://github.com/dask/distributed/issues/4091)
-    export DASK_DISTRIBUTED__WORKER__PROFILE__INTERVAL=10000ms  # Time between statistical profiling queries
-    export DASK_DISTRIBUTED__WORKER__PROFILE__CYCLE=1000000ms  # Time between starting new profile
-
-    srun minis-validation -vv simulate \
-    /path/to/BlueConfig \
-    /path/to/frequencies.csv \
-    /path/to/job-configs/ \
-    /path/to/output/ \
-    -n 1000 \
-    -T /path/to/user.target
-
-The above script will launch running of simulations on a cluster of 16 nodes orchestrated by Dask.
-For 5 job configs and 16 frequencies, it takes around 12 hours to finish. For analysis commands
-there is no need to sbatch. On an allocation of one node with `--mem=0`, it takes around 20-30
-minutes to analyze all jobs results.
+    tox -e py310

@@ -1,8 +1,12 @@
 """Command line interface."""
-from pathlib import Path
 import logging
+from pathlib import Path
+from typing import Optional, Tuple
+
 import click
-from minis_validation import simulation, analysis
+
+from minis_validation import analysis, simulation
+from minis_validation.util import parse_slurm_args
 
 
 @click.group()
@@ -14,48 +18,57 @@ def cli(verbose):
     logging.basicConfig(level=level, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 
-def _format_to_cli(doc):
-    return doc.replace('\n', '\n\n')
-
-
 @cli.command(short_help='Carry simulations with various minis frequencies, for details see'
                         'docstring of ``minis_validation.simulation.run`` function.')
-@click.argument('blue_config', type=click.Path(exists=True, dir_okay=False))
+@click.argument('sonata_simulation_config', type=click.Path(exists=True, dir_okay=False))
 @click.argument('frequencies', type=click.Path(exists=True, dir_okay=False))
 @click.argument('jobs_configs_dir', type=click.Path(exists=True, file_okay=False))
 @click.argument('output', type=click.Path(exists=False, file_okay=False))
-@click.option('--mpi', type=bool, default=True, show_default=True,
-              help='use MPI or threads to run parallel simulations')
+@click.option('--log-dir', type=str, required=False, default="logs", show_default=True,
+              help='Name of a directory to save logs to; on a shared file system')
+@click.option('--timeout-s', type=int, required=False, default=3600, show_default=True,
+              help='Time to live for simulation workers in seconds')
+@click.option('--batch-size', type=int, required=False, default=100, show_default=True,
+              help='Batch size to be processed in each job.')
 @click.option('-n', '--num-cells', type=int, help='Number of cells to simulate')
-@click.option('-T', '--target-file', type=click.Path(exists=True, dir_okay=False), default=None,
-              help='Path to a target file to override "TargetFile" of ``blue-config``')
 @click.option('-t', '--target', type=str, required=False, default=None,
               help='Override "$target" of simulations')
 @click.option('-s', '--seed', type=int, default=None, required=False,
               help='Pseudo-random generator seed')
-@click.option('-g', '--gids', type=str, default=None, required=False,
-              help='List of GIDs separated by comma to manually set required cells to simulate.'
-                   'Multiple gids: --gids=345,543. Single gid: --gids=345.')
 @click.option('-d', '--duration', type=float, default=None, required=False,
               help='Override duration of simulations')
-@click.option('--forward-skip', type=float, default=5000, required=False,
+@click.option('--forward-skip', type=float, default=5000, required=False, show_default=True,
               help='Override "ForwardSkip" value of simulations')
-def simulate(blue_config: str,
+@click.option(
+    "--slurm",
+    multiple=True,
+    type=(str, str),
+    required=False,
+    help="""
+It is possible to add many SLURM configuration values.
+See submitit documentation (https://github.com/facebookincubator/submitit)
+for full list of values and README for hints.
+DO NOT include the `slurm` prefix.
+Mandatory: `--slurm account` and `--slurm partition`
+    """,
+)
+def simulate(sonata_simulation_config: str,
              frequencies: str,
              jobs_configs_dir: str,
              output: str,
-             mpi: bool,
+             log_dir: str,
+             timeout_s: int,
+             batch_size: int,
              num_cells: int,
-             target_file: str = None,
-             target: str = None,
-             seed: int = None,
-             gids: str = None,
-             duration: float = None,
-             forward_skip: float = None):
-    # pylint: disable=too-many-arguments
+             slurm: Tuple[Tuple[str, str], ...],
+             target: Optional[str] = None,
+             seed: Optional[int] = None,
+             duration: Optional[float] = None,
+             forward_skip: Optional[float] = None):
+    # pylint: disable=too-many-arguments, too-many-locals
     """CLI for ``minis_validation.simulation.run`` function.
 
-    BLUE_CONFIG is a path to a BlueConfig file
+    SONATA_SIMULATION_CONFIG is a path to a Sonata simulation file
 
     FREQUENCIES is a path to a CSV file with chosen mini frequencies to simulate
 
@@ -64,18 +77,20 @@ def simulate(blue_config: str,
     OUTPUT is a path to a folder where to store results of simulations
     """
     assert not Path(output).exists(), f'Can\'t output to existing folder: {output}'
-    simulation.run(Path(blue_config),
-                   Path(frequencies),
-                   Path(jobs_configs_dir),
-                   Path(output),
-                   mpi,
-                   num_cells,
-                   None if target_file is None else Path(target_file),
-                   target,
-                   seed,
-                   gids if gids is None else list(map(int, gids.split(','))),
-                   duration,
-                   forward_skip)
+    simulation.run(sonata_simulation_config_file=Path(sonata_simulation_config),
+                   frequencies_file=Path(frequencies),
+                   jobs_configs_dir=Path(jobs_configs_dir),
+                   output=Path(output),
+                   log_dir=log_dir,
+                   num_cells=num_cells,
+                   target=target,
+                   seed=seed,
+                   duration=duration,
+                   forward_skip=forward_skip,
+                   slurm_args=parse_slurm_args(slurm),
+                   timeout_s=timeout_s,
+                   batch_size=batch_size,
+                   )
 
 
 @cli.command(short_help='Analyze single job results, for details see docstring '

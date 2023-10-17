@@ -8,3 +8,5 @@ doc/build
 build
 dist
 .eggs
+tests/data/log_dir
+tests/data/output

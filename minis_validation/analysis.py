@@ -1,20 +1,21 @@
 """Analysis of results from ``simulation`` package."""
+from collections import defaultdict
 import re
 from pathlib import Path
 import logging
-from typing import Dict
+from typing import Any, Dict, Optional
 
-from click import progressbar
 import h5py
-import yaml
 import numpy as np
 import pandas as pd
-from scipy.signal import find_peaks
+import yaml
+from click import progressbar
 from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
 
-from minis_validation.plotting import (scaled_log1p, scaled_log1p_inv, plot_traces_events,
-                                       plot_fitted_results)
-from minis_validation.util import TIME, CURRENT
+from minis_validation.plotting import (plot_fitted_results, plot_traces_events,
+                                       scaled_log1p, scaled_log1p_inv)
+from minis_validation.util import CURRENT, TIME
 
 L = logging.getLogger(__name__)
 
@@ -36,15 +37,14 @@ def _parse_trace_filename(trace_filename: str):
         return float(match.group('frequency'))
 
 
-def _save_results(save_dir: Path, input_freqs, mean_freqs, std_freqs, amplitudes, calcium):
+def _save_results(save_dir: Path, input_freqs, mean_freqs, std_freqs, amplitudes):
     """Save results (matrices to .npz for reuse eg. plots and to table for better readability)."""
     save_dir.mkdir(exist_ok=True, parents=True)
-    calcium = np.full_like(input_freqs, calcium)
     np.savetxt(save_dir / 'frequencies.tsv',
-               np.vstack((calcium, input_freqs, mean_freqs, std_freqs)).T,
+               np.vstack((input_freqs, mean_freqs, std_freqs)).T,
                fmt='%.3f',
                delimiter='\t',
-               header='calcium\tinput_freq\tmean_freq\tstd_freq')
+               header='input_freq\tmean_freq\tstd_freq')
     np.savez(save_dir / 'frequencies.npz', input_freqs=input_freqs, mean_freqs=mean_freqs,
              std_freqs=std_freqs, **amplitudes)
 
@@ -53,19 +53,22 @@ def _load_traces(trace_file: Path, t_start: int = 0):
     """Loads in traces (and events) from h5 dump."""
     with h5py.File(trace_file, 'r') as h5f:
         assert 'traces' in h5f, f'Unexpected HDF5 layout of a trace file {trace_file}'
-        traces_per_gid = {}
+        traces_per_population: dict[str, dict[int, Any]] = defaultdict(dict)
         for trace_h5 in iter(h5f['traces'].values()):
-            gid = trace_h5.attrs['gid']
-            trace = np.array(trace_h5['trace'])  # time, voltage, current
-            events = np.array(trace_h5['events'])  # time, id
-            if t_start != 0:
-                t_idx = np.where(t_start < trace[:, TIME])[0]
-                e_idx = np.where(t_start < events[:, TIME])[0]
-            else:
-                t_idx = slice(None)  # type: ignore  # use all
-                e_idx = slice(None)  # type: ignore  # use all
-            traces_per_gid[gid] = {'trace': trace[t_idx, :], 'events': events[e_idx, :]}
-    return traces_per_gid
+            for population_name, traces in iter(trace_h5.items()):
+                traces_per_gid = {}
+                node_id = traces.attrs['node_id']
+                trace = np.array(traces['trace'])  # time, voltage, current
+                events = np.array(traces['events'])  # time, id
+                if t_start != 0:
+                    t_idx = np.where(t_start < trace[:, TIME])[0]
+                    e_idx = np.where(t_start < events[:, TIME])[0]
+                else:
+                    t_idx = slice(None)  # type: ignore  # use all
+                    e_idx = slice(None)  # type: ignore  # use all
+                traces_per_gid[node_id] = {'trace': trace[t_idx, :], 'events': events[e_idx, :]}
+                traces_per_population[population_name].update(traces_per_gid)
+    return traces_per_population
 
 
 def _process_trace(trace, syn_type, peak_min_height):
@@ -85,7 +88,7 @@ def _process_trace(trace, syn_type, peak_min_height):
 
 def _analyze_frequency(trace_file: Path,
                        syn_type: str,
-                       peak_min_height: float = None,
+                       peak_min_height: Optional[float] = None,
                        plot_traces: bool = False):
     # pylint: disable=too-many-locals
     """Analyzes a single file that holds a simulation data of one frequency of one job config.
@@ -100,28 +103,40 @@ def _analyze_frequency(trace_file: Path,
         a tuple if minis data: mean, std and amplitude of minis frequencies
     """
     frequency = _parse_trace_filename(trace_file.name)
-    traces_per_gid = _load_traces(trace_file, t_start=1000)  # t_start =1000 to skip the 1st second
-    traces = traces_per_gid.values()
+    traces_per_population = _load_traces(
+        trace_file, t_start=1000
+    )  # t_start =1000 to skip the 1st second
 
-    res = [_process_trace(trace, syn_type, peak_min_height) for trace in traces]
-    nbad = 0
     f_peaks = []
     ampl_peaks = []
-    for (f, ampl, peaks), trace in zip(res, traces):
-        # sanity check detected peaks (e.g. voltage-clamp artifacts)
-        if len(peaks) <= len(trace['events'][:, TIME]):
-            trace['peaks'] = peaks  # save them for plotting or whatever...
-            f_peaks.append(f)  # append frequency
-            ampl_peaks.extend(ampl)  # append amplitude distribution
-        else:
-            nbad += 1
-            trace['peaks'] = []
-    if nbad > 0:
-        L.warning('%d/%d traces didn\'t pass sanity check', nbad, len(traces))
 
-    if plot_traces:
-        plot_dir = trace_file.parent / 'analysis' / 'debug_' / f'{frequency:.3f}freq'
-        plot_traces_events(plot_dir, traces_per_gid, frequency <= 0.01, True)
+    for population_name, traces_per_gid in traces_per_population.items():
+        traces = traces_per_gid.values()
+
+        nbad = 0
+        for trace in traces_per_gid.values():
+            f, ampl, peaks = _process_trace(trace, syn_type, peak_min_height)
+            # sanity check detected peaks (e.g. voltage-clamp artifacts)
+            if len(peaks) <= len(trace['events'][:, TIME]):
+                trace['peaks'] = peaks  # save them for plotting or whatever...
+                f_peaks.append(f)  # append frequency
+                ampl_peaks.extend(ampl)  # append amplitude distribution
+            else:
+                nbad += 1
+                trace['peaks'] = []
+        if nbad > 0:
+            L.warning('%d/%d traces for population %s didn\'t pass sanity check',
+                      nbad, len(traces), population_name)
+
+        if plot_traces:
+            plot_dir = trace_file.parent / 'analysis' / 'debug_' / f'{frequency:.3f}freq'
+            plot_traces_events(
+                plot_dir,
+                population_name,
+                traces_per_gid,
+                mark_NetCon_events=frequency <= 0.01,
+                mark_peaks=True,
+            )
 
     # ampl_peaks*1000 is for nA to pA conversion
     return np.mean(f_peaks), np.std(f_peaks), np.asarray(ampl_peaks) * 1000.
@@ -163,8 +178,7 @@ def analyze_job(job_config_file: Path, job_traces_dir: Path) -> Dict:
     analysis_dir = job_traces_dir / 'analysis'
 
     # save results
-    Ca = job_config['protocol']['calcium']
-    _save_results(analysis_dir, input_freqs, minis_freqs_mean, minis_freqs_std, minis_ampls, Ca)
+    _save_results(analysis_dir, input_freqs, minis_freqs_mean, minis_freqs_std, minis_ampls)
 
     # fit curve
     # pylint: disable=unbalanced-tuple-unpacking
@@ -196,7 +210,6 @@ def analyze_job(job_config_file: Path, job_traces_dir: Path) -> Dict:
         'pathway': f'{cell_type}_{syn_type}',
         'ref_freq': ref_freq,
         'ref_std': job_config['results']['frequency']['std'],
-        'Ca': Ca,
         'minis_freq': ref_freq_inv
     }
 

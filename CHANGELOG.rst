@@ -1,10 +1,18 @@
 Changelog
 =========
 
+Version 0.1.0
+-------------
+- Upgrade to sonata config
+- Switch to submitit from dask
+- Switch to Bluecellulab from bglibpy
+
 Version 0.0.6
 -------------
 - Add new option ``mpi`` for ``minis_validation.simulation.run``. It allows to choose whether
   to run parallel simulations with mpi or not.
+- [NSETM-2061] Remove usage of blueconfig (require bglibpy>=4.9.5)
+- Add explicit support and tests for python 3.10
 
 Version 0.0.5
 -------------

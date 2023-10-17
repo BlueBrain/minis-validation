@@ -1,0 +1,18 @@
+
+{
+  "Mosaic": {
+    "population": "root__neurons"
+  },
+  "Mosaic_0": {
+    "population": "root__neurons",
+    "node_id": [
+      0
+    ]
+  },
+  "selection": {
+    "population": "root__neurons",
+    "node_id": [
+      0, 123, 456, 789, 1234, 5678
+    ]
+  }
+}

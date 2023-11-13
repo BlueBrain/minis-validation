@@ -1,7 +1,7 @@
 """Simulations of a cell with spontaneous minis."""
-from datetime import timedelta
 import itertools
 import logging
+from datetime import timedelta
 from multiprocessing import Process
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
@@ -13,20 +13,19 @@ import submitit
 import yaml
 from bluecellulab.circuit.config import SonataSimulationConfig
 from bluecellulab.circuit.config.sections import ConnectionOverrides
-from bluepysnap import Simulation, Circuit
-
+from bluepysnap import Circuit, Simulation
 
 L = logging.getLogger(__name__)
 
 
 def _get_config_output(output: Path, config_file: Path) -> Path:
     """Returns path to the output of job config file within ``output``."""
-    return output / config_file.stem.split('config_')[1]
+    return output / config_file.stem.split("config_")[1]
 
 
 def _get_config_minis_type(config_file: Path) -> str:
     """Extracts minis type from job config filename."""
-    return config_file.stem.split('_')[-1]
+    return config_file.stem.split("_")[-1]
 
 
 def _parse_trace_filename(filename: str) -> Tuple[str, int]:
@@ -35,9 +34,7 @@ def _parse_trace_filename(filename: str) -> Tuple[str, int]:
     return population, int(node_id)
 
 
-def _get_gids(cells: Dict,
-              circuit: Circuit,
-              num_cells: int):
+def _get_gids(cells: Dict, circuit: Circuit, num_cells: int):
     """Selects GIDs to simulate.
 
     Args:
@@ -57,9 +54,7 @@ def _get_gids(cells: Dict,
 
 def _write_traces(frequency, output_dir: Path, logging_level: int = logging.INFO):
     """Writes ``traces`` from ``run`` to their corresponding HDF5 files. One file per trace."""
-    logging.basicConfig(
-        level=logging_level, format="%(asctime)s - %(levelname)s - %(message)s"
-    )
+    logging.basicConfig(level=logging_level, format="%(asctime)s - %(levelname)s - %(message)s")
     job_logger = logging.getLogger(__name__)
 
     trace_files = list(output_dir.glob(f"*_{frequency:.3f}.npz"))
@@ -83,9 +78,7 @@ def _write_traces(frequency, output_dir: Path, logging_level: int = logging.INFO
         for trace_file in trace_files:
             trace_file.unlink()
     except Exception:  # pylint: disable=broad-except
-        L.exception(
-            "Exception at writing traces of %s and frequency %f", output_dir, frequency
-        )
+        L.exception("Exception at writing traces of %s and frequency %f", output_dir, frequency)
 
 
 def _run_simulation(
@@ -122,9 +115,7 @@ def _run_simulation(
         forward_skip: first simulation time to skip
         logging_level: logging level to use by the workers
     """
-    logging.basicConfig(
-        level=logging_level, format="%(asctime)s - %(levelname)s - %(message)s"
-    )
+    logging.basicConfig(level=logging_level, format="%(asctime)s - %(levelname)s - %(message)s")
     job_logger = logging.getLogger(__name__)
 
     import bluecellulab
@@ -137,9 +128,7 @@ def _run_simulation(
         "Running a gid %s, minis type %s and frequency %.3f", gid, minis_type, frequency
     )
 
-    sonata_simulation_config = SonataSimulationConfig(
-        str(sonata_simulation_config_file)
-    )
+    sonata_simulation_config = SonataSimulationConfig(str(sonata_simulation_config_file))
     sonata_simulation_config.add_connection_override(
         ConnectionOverrides(
             source="Inhibitory",
@@ -164,9 +153,7 @@ def _run_simulation(
         rng_mode="Random123",
     )
 
-    ssim.instantiate_gids(
-        [gid], add_synapses=True, add_minis=True, add_projections=True
-    )
+    ssim.instantiate_gids([gid], add_synapses=True, add_minis=True, add_projections=True)
     cell = ssim.cells[gid]
     if enable_ttx:
         cell.enable_ttx()
@@ -196,11 +183,7 @@ def _run_simulation(
     # get time-sorted minis events
     events = np.array(
         sorted(
-            (
-                (t, syn_id[1])
-                for syn_id, nc_vectors in mini_nc_vectors.items()
-                for t in nc_vectors
-            )
+            ((t, syn_id[1]) for syn_id, nc_vectors in mini_nc_vectors.items() for t in nc_vectors)
         )
     )
     if events.size == 0:
@@ -273,8 +256,10 @@ def run(
     if slurm_args:
         L.info("Using SLURM executor.")
         if "slurm_time" in slurm_args:
-            raise KeyError("Use `timeout_s` argument instead of `slurm_time`. "
-                           "It will be synchronized automatically.")
+            raise KeyError(
+                "Use `timeout_s` argument instead of `slurm_time`. "
+                "It will be synchronized automatically."
+            )
         slurm_time = str(timedelta(seconds=timeout_s))
         executor = submitit.AutoExecutor(
             folder=log_dir + "/%j",
@@ -317,7 +302,7 @@ def run(
                 config["cells"]["$target"] = target
 
             config_gids = _get_gids(
-                cells=config['cells'],
+                cells=config["cells"],
                 circuit=circuit,
                 num_cells=num_cells,
             )

@@ -8,5 +8,5 @@ def test_parse_slurm_args():
     assert result == {
         "slurm_account": "proj30",
         "slurm_partition": "prod",
-        "slurm_cpus_per_task": 2
+        "slurm_cpus_per_task": 2,
     }

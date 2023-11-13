@@ -1,8 +1,8 @@
 """Analysis of results from ``simulation`` package."""
-from collections import defaultdict
-import re
-from pathlib import Path
 import logging
+import re
+from collections import defaultdict
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 import h5py
@@ -13,83 +13,97 @@ from click import progressbar
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 
-from minis_validation.plotting import (plot_fitted_results, plot_traces_events,
-                                       scaled_log1p, scaled_log1p_inv)
+from minis_validation.plotting import (
+    plot_fitted_results,
+    plot_traces_events,
+    scaled_log1p,
+    scaled_log1p_inv,
+)
 from minis_validation.util import CURRENT, TIME
 
 L = logging.getLogger(__name__)
 
 
 def _parse_job_config_filename(job_config_filename: str):
-    match = re.match(r'config_(?P<cell_type>\w+)_(?P<syn_type>(Exc)|(Inh)).yaml',
-                     job_config_filename)
+    match = re.match(
+        r"config_(?P<cell_type>\w+)_(?P<syn_type>(Exc)|(Inh)).yaml", job_config_filename
+    )
     if match is None:
         return None, None
     else:
-        return match.group('cell_type'), match.group('syn_type')
+        return match.group("cell_type"), match.group("syn_type")
 
 
 def _parse_trace_filename(trace_filename: str):
-    match = re.match(r'traces_freq(?P<frequency>[\d.]+).h5', trace_filename)
+    match = re.match(r"traces_freq(?P<frequency>[\d.]+).h5", trace_filename)
     if match is None:
         return None
     else:
-        return float(match.group('frequency'))
+        return float(match.group("frequency"))
 
 
 def _save_results(save_dir: Path, input_freqs, mean_freqs, std_freqs, amplitudes):
     """Save results (matrices to .npz for reuse eg. plots and to table for better readability)."""
     save_dir.mkdir(exist_ok=True, parents=True)
-    np.savetxt(save_dir / 'frequencies.tsv',
-               np.vstack((input_freqs, mean_freqs, std_freqs)).T,
-               fmt='%.3f',
-               delimiter='\t',
-               header='input_freq\tmean_freq\tstd_freq')
-    np.savez(save_dir / 'frequencies.npz', input_freqs=input_freqs, mean_freqs=mean_freqs,
-             std_freqs=std_freqs, **amplitudes)
+    np.savetxt(
+        save_dir / "frequencies.tsv",
+        np.vstack((input_freqs, mean_freqs, std_freqs)).T,
+        fmt="%.3f",
+        delimiter="\t",
+        header="input_freq\tmean_freq\tstd_freq",
+    )
+    np.savez(
+        save_dir / "frequencies.npz",
+        input_freqs=input_freqs,
+        mean_freqs=mean_freqs,
+        std_freqs=std_freqs,
+        **amplitudes,
+    )
 
 
 def _load_traces(trace_file: Path, t_start: int = 0):
     """Loads in traces (and events) from h5 dump."""
-    with h5py.File(trace_file, 'r') as h5f:
-        assert 'traces' in h5f, f'Unexpected HDF5 layout of a trace file {trace_file}'
+    with h5py.File(trace_file, "r") as h5f:
+        assert "traces" in h5f, f"Unexpected HDF5 layout of a trace file {trace_file}"
         traces_per_population: dict[str, dict[int, Any]] = defaultdict(dict)
-        for trace_h5 in iter(h5f['traces'].values()):
+        for trace_h5 in iter(h5f["traces"].values()):
             for population_name, traces in iter(trace_h5.items()):
                 traces_per_gid = {}
-                node_id = traces.attrs['node_id']
-                trace = np.array(traces['trace'])  # time, voltage, current
-                events = np.array(traces['events'])  # time, id
+                node_id = traces.attrs["node_id"]
+                trace = np.array(traces["trace"])  # time, voltage, current
+                events = np.array(traces["events"])  # time, id
                 if t_start != 0:
                     t_idx = np.where(t_start < trace[:, TIME])[0]
                     e_idx = np.where(t_start < events[:, TIME])[0]
                 else:
                     t_idx = slice(None)  # type: ignore  # use all
                     e_idx = slice(None)  # type: ignore  # use all
-                traces_per_gid[node_id] = {'trace': trace[t_idx, :], 'events': events[e_idx, :]}
+                traces_per_gid[node_id] = {"trace": trace[t_idx, :], "events": events[e_idx, :]}
                 traces_per_population[population_name].update(traces_per_gid)
     return traces_per_population
 
 
 def _process_trace(trace, syn_type, peak_min_height):
-    _is = np.copy(trace['trace'][:, CURRENT])
+    _is = np.copy(trace["trace"][:, CURRENT])
     _is -= np.mean(_is)  # remove mean tendency
-    if syn_type == 'Exc':  # find_peaks looks for positive peaks
+    if syn_type == "Exc":  # find_peaks looks for positive peaks
         _is *= -1
     peaks, peak_props = find_peaks(_is, height=peak_min_height / 1000)  # /1000 pA to nA conversion
 
-    t = trace['trace'][:, TIME]
-    len_sim = (t[-1] - t[0]) / 1000.  # ms to s conversion
+    t = trace["trace"][:, TIME]
+    len_sim = (t[-1] - t[0]) / 1000.0  # ms to s conversion
     f_peaks = len(peaks) / len_sim  # number of peaks / sim length
-    ampl_peaks = peak_props['peak_heights']  # amplitude distribution
+    ampl_peaks = peak_props["peak_heights"]  # amplitude distribution
 
     return f_peaks, ampl_peaks, peaks
 
 
-def _analyze_frequency(trace_file: Path,
-                       syn_type: str,
-                       peak_min_height: Optional[float] = None,
-                       plot_traces: bool = False):
+def _analyze_frequency(
+    trace_file: Path,
+    syn_type: str,
+    peak_min_height: Optional[float] = None,
+    plot_traces: bool = False,
+):
     # pylint: disable=too-many-locals
     """Analyzes a single file that holds a simulation data of one frequency of one job config.
 
@@ -117,19 +131,23 @@ def _analyze_frequency(trace_file: Path,
         for trace in traces_per_gid.values():
             f, ampl, peaks = _process_trace(trace, syn_type, peak_min_height)
             # sanity check detected peaks (e.g. voltage-clamp artifacts)
-            if len(peaks) <= len(trace['events'][:, TIME]):
-                trace['peaks'] = peaks  # save them for plotting or whatever...
+            if len(peaks) <= len(trace["events"][:, TIME]):
+                trace["peaks"] = peaks  # save them for plotting or whatever...
                 f_peaks.append(f)  # append frequency
                 ampl_peaks.extend(ampl)  # append amplitude distribution
             else:
                 nbad += 1
-                trace['peaks'] = []
+                trace["peaks"] = []
         if nbad > 0:
-            L.warning('%d/%d traces for population %s didn\'t pass sanity check',
-                      nbad, len(traces), population_name)
+            L.warning(
+                "%d/%d traces for population %s didn't pass sanity check",
+                nbad,
+                len(traces),
+                population_name,
+            )
 
         if plot_traces:
-            plot_dir = trace_file.parent / 'analysis' / 'debug_' / f'{frequency:.3f}freq'
+            plot_dir = trace_file.parent / "analysis" / "debug_" / f"{frequency:.3f}freq"
             plot_traces_events(
                 plot_dir,
                 population_name,
@@ -139,7 +157,7 @@ def _analyze_frequency(trace_file: Path,
             )
 
     # ampl_peaks*1000 is for nA to pA conversion
-    return np.mean(f_peaks), np.std(f_peaks), np.asarray(ampl_peaks) * 1000.
+    return np.mean(f_peaks), np.std(f_peaks), np.asarray(ampl_peaks) * 1000.0
 
 
 def analyze_job(job_config_file: Path, job_traces_dir: Path) -> Dict:
@@ -159,23 +177,29 @@ def analyze_job(job_config_file: Path, job_traces_dir: Path) -> Dict:
         job_config = yaml.load(f, Loader=yaml.SafeLoader)
     cell_type, syn_type = _parse_job_config_filename(job_config_file.name)
     res = {}
-    with progressbar(sorted(job_traces_dir.glob('*.h5')),
-                     label=f'Analyzing {job_config_file}') as trace_files:
+    with progressbar(
+        sorted(job_traces_dir.glob("*.h5")), label=f"Analyzing {job_config_file}"
+    ) as trace_files:
         for trace_file in trace_files:
             freq = _parse_trace_filename(trace_file.name)
             if freq is None:
-                L.warning(('A trace file %s must be named as "traces_freq<some float number>.h5".' +
-                           'Skipping'), trace_file)
+                L.warning(
+                    (
+                        'A trace file %s must be named as "traces_freq<some float number>.h5".'
+                        + "Skipping"
+                    ),
+                    trace_file,
+                )
             else:
-                res[freq] = _analyze_frequency(trace_file, syn_type, **job_config['analysis'])
+                res[freq] = _analyze_frequency(trace_file, syn_type, **job_config["analysis"])
     if len(res.keys()) == 0:
         return {}
 
     input_freqs = np.fromiter(res.keys(), dtype=float)
     minis_freqs_mean = np.array([v[0] for v in res.values()])
     minis_freqs_std = np.array([v[1] for v in res.values()])
-    minis_ampls = {f'ampl_{i}': v[2] for i, v in enumerate(res.values())}
-    analysis_dir = job_traces_dir / 'analysis'
+    minis_ampls = {f"ampl_{i}": v[2] for i, v in enumerate(res.values())}
+    analysis_dir = job_traces_dir / "analysis"
 
     # save results
     _save_results(analysis_dir, input_freqs, minis_freqs_mean, minis_freqs_std, minis_ampls)
@@ -183,34 +207,38 @@ def analyze_job(job_config_file: Path, job_traces_dir: Path) -> Dict:
     # fit curve
     # pylint: disable=unbalanced-tuple-unpacking
     curve_fit_idx = 1 if input_freqs[0] == 0 else 0
-    popt, _ = curve_fit(scaled_log1p,
-                        xdata=input_freqs[curve_fit_idx:],
-                        ydata=minis_freqs_mean[curve_fit_idx:],
-                        p0=[10, 1],
-                        sigma=minis_freqs_std[curve_fit_idx:])
+    popt, _ = curve_fit(
+        scaled_log1p,
+        xdata=input_freqs[curve_fit_idx:],
+        ydata=minis_freqs_mean[curve_fit_idx:],
+        p0=[10, 1],
+        sigma=minis_freqs_std[curve_fit_idx:],
+    )
     # find reference value
-    ref_freq = job_config['results']['frequency']['mean']
+    ref_freq = job_config["results"]["frequency"]["mean"]
     ref_freq_inv = scaled_log1p_inv(ref_freq, *popt)
 
     # plot results
-    plot_fitted_results(analysis_dir,
-                        job_traces_dir.name,
-                        input_freqs,
-                        minis_freqs_mean,
-                        minis_freqs_std,
-                        popt,
-                        ref_freq,
-                        ref_freq_inv)
+    plot_fitted_results(
+        analysis_dir,
+        job_traces_dir.name,
+        input_freqs,
+        minis_freqs_mean,
+        minis_freqs_std,
+        popt,
+        ref_freq,
+        ref_freq_inv,
+    )
 
-    with (job_traces_dir / job_config_file.name).open('w') as f:
-        job_config.update({'minis_frequency': float(ref_freq_inv)})
+    with (job_traces_dir / job_config_file.name).open("w") as f:
+        job_config.update({"minis_frequency": float(ref_freq_inv)})
         yaml.dump(job_config, f, yaml.SafeDumper)
 
     return {
-        'pathway': f'{cell_type}_{syn_type}',
-        'ref_freq': ref_freq,
-        'ref_std': job_config['results']['frequency']['std'],
-        'minis_freq': ref_freq_inv
+        "pathway": f"{cell_type}_{syn_type}",
+        "ref_freq": ref_freq,
+        "ref_std": job_config["results"]["frequency"]["std"],
+        "minis_freq": ref_freq_inv,
     }
 
 
@@ -228,19 +256,28 @@ def analyze_jobs(jobs_configs_dir: Path, jobs_traces_dir: Path):
         A dataframe of results
     """
     job_results = []
-    for job_config_file in jobs_configs_dir.glob('*.yaml'):
+    for job_config_file in jobs_configs_dir.glob("*.yaml"):
         cell_type, syn_type = _parse_job_config_filename(job_config_file.name)
         if cell_type is None:
-            L.warning(('%s must be named as "config_<CELL_TYPE>_<SYN_TYPE>.yaml where SYN_TYPE' +
-                       ' must be either "Exc" or "Inh". Skipping.'), job_config_file.name)
+            L.warning(
+                (
+                    '%s must be named as "config_<CELL_TYPE>_<SYN_TYPE>.yaml where SYN_TYPE'
+                    + ' must be either "Exc" or "Inh". Skipping.'
+                ),
+                job_config_file.name,
+            )
         else:
-            config_title = f'{cell_type}_{syn_type}'
+            config_title = f"{cell_type}_{syn_type}"
             if (jobs_traces_dir / config_title).is_dir():
                 job_results.append(analyze_job(job_config_file, jobs_traces_dir / config_title))
             else:
-                L.warning('`job_config_file` %s must have a folder "%s" in `jobs_traces_dir` %s',
-                          job_config_file, config_title, jobs_traces_dir)
-    L.info('minis-validation analysis has been finished')
+                L.warning(
+                    '`job_config_file` %s must have a folder "%s" in `jobs_traces_dir` %s',
+                    job_config_file,
+                    config_title,
+                    jobs_traces_dir,
+                )
+    L.info("minis-validation analysis has been finished")
     job_results = pd.DataFrame(job_results)
-    job_results.to_csv(jobs_traces_dir / 'job_results.csv', index=False)
+    job_results.to_csv(jobs_traces_dir / "job_results.csv", index=False)
     return job_results

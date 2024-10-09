@@ -1,4 +1,5 @@
 """Plot functions for ``analysis`` package."""
+
 from pathlib import Path
 from typing import Dict
 

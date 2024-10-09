@@ -1,4 +1,5 @@
 """Simulations of a cell with spontaneous minis."""
+
 import itertools
 import logging
 from datetime import timedelta
@@ -146,7 +147,7 @@ def _run_simulation(
         )
     )
 
-    ssim = bluecellulab.SSim(
+    ssim = bluecellulab.CircuitSimulation(
         sonata_simulation_config,
         record_dt=record_dt,
         base_seed=seed,

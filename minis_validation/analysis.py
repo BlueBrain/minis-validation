@@ -1,4 +1,5 @@
 """Analysis of results from ``simulation`` package."""
+
 import logging
 import re
 from collections import defaultdict

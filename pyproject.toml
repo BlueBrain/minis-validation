@@ -22,6 +22,7 @@ disable = [
     'import-outside-toplevel',
     'bad-mcs-classmethod-argument',
     'unnecessary-lambda-assignment',
+    'too-many-positional-arguments',
 ]
 
 [tool.pylint.format]
